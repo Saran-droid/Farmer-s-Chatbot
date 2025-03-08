@@ -26,7 +26,7 @@ Farmer's AI Chatbot is an intelligent virtual assistant designed to help farmers
 ### Installation Steps
 1. Clone the repository:
    ```sh
-   git clone https://github.com/your-repo/farmers-chatbot.git
+   git clone https://https://github.com/Saran-droid/Farmer-s-Chatbot.git
    cd farmers-chatbot
    ```
 2. Install dependencies:
