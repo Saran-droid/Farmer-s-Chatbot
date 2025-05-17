@@ -1,9 +1,9 @@
 Flask
 Flask-CORS
 requests
-dotenv
-langchain
+python-dotenv
+langchain>=0.1.0
+langchain-community>=0.0.20
 pandas
 SpeechRecognition
 gunicorn
-
