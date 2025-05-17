@@ -15,12 +15,15 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 app.secret_key = secrets.token_hex(32)
 
+@app.before_request
+def ensure_session_id():
+    if "user_id" not in session:
+        session["user_id"] = secrets.token_hex(8)
+
 API_KEY = os.getenv("api")
 URL = "https://openrouter.ai/api/v1/chat/completions"
 
-# Initialize chat history memory
-history = ChatMessageHistory()
-memory = ConversationBufferMemory(chat_memory=history, return_messages=True)
+user_memories = {}
 
 
 def get_market_price(commodity, state):
@@ -53,7 +56,7 @@ def get_market_price(commodity, state):
 
 
 # **AI-Powered Query Classification & Follow-Up Detection**
-def classify_user_query_with_context(user_query, previous_context, model="microsoft/phi-3-mini-128k-instruct:free", temperature=0.7):
+def classify_user_query_with_context(user_query, previous_context, model="mistralai/mistral-7b-instruct:free", temperature=0.7):
     """
     Classifies a user query into predefined farming-related categories using OpenRouter's AI model.
     Now also extracts the state name if present.
@@ -80,8 +83,6 @@ def classify_user_query_with_context(user_query, previous_context, model="micros
                   - Fertilizer Recommendation
                   - General Farming Information
                   - Pesticide and Related Explanation
-                  - Fertilizers and General
-                  - Market Price and General
                   - Irrelevant
               4. Extract the **crop name** mentioned (or return "None").
               5. Extract the **state name** mentioned (or return "None"). 
@@ -213,8 +214,21 @@ def fetch_fertilizer_recommendations(crop):
 
 
 
+def get_user_memory():
+    user_id = session.get("user_id")
+    if not user_id:
+        user_id = secrets.token_hex(8)
+        session["user_id"] = user_id
+    if user_id not in user_memories:
+        history = ChatMessageHistory()
+        user_memories[user_id] = ConversationBufferMemory(chat_memory=history, return_messages=True)
+    return user_memories[user_id]
+
+
 def handle_user_query(user_query):
     print("\n🔹 New User Query Received:", user_query)
+
+    memory = get_user_memory()
 
     # Detect language and translate to English
     try:
@@ -269,7 +283,7 @@ def handle_user_query(user_query):
 
     response_parts = []
 
-    # **Handle Queries Based on Classification**
+    # Handle Queries Based on Classification
     try:
         if "Market Price" in category:
             print(f"💰 Fetching Market Price for {crop} in {state}")
@@ -288,7 +302,6 @@ def handle_user_query(user_query):
             pesticide_info = fetch_pesticide_recommendations(crop)
 
             response_parts.append(f"**Farming Expert's Advice:**\n{general_info}")
-
             if pesticide_info:
                 print(f"✅ Pesticide Recommendations: {pesticide_info}")
                 response_parts.append(f"**Recommended Pesticides for {crop}:** {pesticide_info}")
@@ -296,13 +309,13 @@ def handle_user_query(user_query):
         elif "Pest Control" in category:
             print(f"🐜 Fetching Pest Control Info for {crop}")
             pesticide_info = fetch_pesticide_recommendations(crop)
-
             if pesticide_info:
                 print(f"✅ Pest Control Recommendations: {pesticide_info}")
                 response_parts.append(f"**Recommended Pesticides for {crop}:** {pesticide_info}")
 
         elif "General Farming Information" in category:
             print(f"🌾 Fetching General Farming Advice")
+            print(translated_query)
             general_info = answer_general_farming_question(translated_query, previous_context)
             response_parts.append(f"**Farming Expert's Advice:**\n{general_info}")
 
@@ -325,15 +338,15 @@ def handle_user_query(user_query):
         print(f"🚨 Error in Query Handling: {traceback.format_exc()}")
         response_parts.append("An error occurred while processing your request.")
 
-    # **Translate response back to the original language**
+    # Translate response back to the original language
     try:
         response = "\n\n".join(response_parts).strip()
         final_response = translate_back(response, detected_lang)
     except Exception as e:
         print(f"🚨 Translation Error: {traceback.format_exc()}")
-        final_response = response  # Fallback: Send untranslated response
+        final_response = response  # Fallback
 
-    # Save conversation context (Fix for Memory Issue)
+    # Save final response in memory
     try:
         memory.save_context({"input": combined_input}, {"output": final_response})
         print(f"💾 Conversation Saved Successfully!")
@@ -341,6 +354,7 @@ def handle_user_query(user_query):
         print(f"🚨 Memory Save Error (Final): {traceback.format_exc()}")
 
     return final_response
+
 
 
 
@@ -357,7 +371,8 @@ def chat():
 
         response = handle_user_query(user_query)
 
-        # Get chat history
+        # Load chat history from session-based memory
+        memory = get_user_memory()
         chat_history = memory.load_memory_variables({})
         chat_history_serializable = [msg.content for msg in chat_history.get("history", [])]
 
@@ -367,5 +382,8 @@ def chat():
         return jsonify({"error": f"Internal Server Error: {str(e)}"}), 500
 
 
+@app.route("/", methods=["GET"])
+def home():
+    return "✅ Farmer's Chat is up and running!"
 if __name__ == "__main__":
     app.run(debug=True)
