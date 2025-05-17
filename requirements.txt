@@ -5,3 +5,5 @@ dotenv
 langchain
 pandas
 SpeechRecognition
+gunicorn
+
