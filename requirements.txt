@@ -1,0 +1,7 @@
+Flask
+Flask-CORS
+requests
+dotenv
+langchain
+pandas
+SpeechRecognition
