@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { api, Conversation, Message, MarketData } from '../lib/api'
+import { api } from '../lib/api'
+import type { Conversation, Message, MarketData } from '../lib/api'
 import Sidebar from '../components/Sidebar'
 import ChatMessage from '../components/ChatMessage'
 import ChatInput from '../components/ChatInput'
