@@ -40,9 +40,14 @@ def _sse(event: str, data: dict) -> str:
 
 
 def _set_auth_cookie(response, token: str):
+    import os
+    is_production = os.getenv("RENDER") == "true"
     response.set_cookie(
         "auth_token", token,
-        httponly=True, samesite="lax", max_age=60 * 60 * 24 * 7,
+        httponly=True,
+        samesite="none" if is_production else "lax",
+        secure=True if is_production else False,
+        max_age=60 * 60 * 24 * 7,
     )
 
 
