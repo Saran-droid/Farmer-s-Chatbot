@@ -32,7 +32,7 @@ export interface MarketData {
 }
 
 class API {
-  private baseURL = import.meta.env.VITE_API_URL || ''
+  private baseURL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
 
   async register(name: string, email: string, password: string): Promise<User> {
     const res = await fetch(`${this.baseURL}/auth/register`, {
