@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+groq
+requests
+pandas
+aiosqlite
+python-multipart
+python-jose[cryptography]
+bcrypt
