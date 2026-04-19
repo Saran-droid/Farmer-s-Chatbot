@@ -28,7 +28,7 @@ app = FastAPI(title="AgriConnect API v2", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"https://.*\.onrender\.com",  # Allow all Render subdomains
+    allow_origin_regex=r"https://.*\.onrender\.com|http://localhost:3000",  # Allow Render domains and localhost
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
